@@ -3,9 +3,19 @@
 #include <queue>
 #include <vector>
 
-Player::Player() { std::cout << "Player constructor called" << std::endl; }
+Player::Player() {
+  std::cout << "Player constructor called" << std::endl;
+  hand = new Hand();
+  cardsLeft = std::set<int>();
+  for (int i = 0; i < 54; i++) {
+    cardsLeft.insert(i);
+  }
+}
 
-Player::~Player() { std::cout << "Player destructor called" << std::endl; }
+Player::~Player() {
+  std::cout << "Player destructor called" << std::endl;
+  delete hand;
+}
 
 void Player::evaluateHand(Hand *hand) {
   std::priority_queue<int, std::vector<int>, std::greater<int>> highCards;
@@ -111,5 +121,32 @@ void Player::addCard(int card) {
     hand->cards[suit][13] = true;
   } else {
     hand->cards[suit][value] = true;
+  }
+}
+
+int Player::turn(Hand *handV, int tricksV, int jokersV, int numCardsLeftV) {
+  if (this->shouldPlay(handV, tricksV, jokersV, numCardsLeftV) == 1) {
+    while (this->hand->value < handV->value) {
+      this->playCard();
+      this->evaluateHand(this->hand);
+    }
+  }
+  return 0;
+}
+
+int Player::shouldPlay(Hand *handV, int tricksV, int jokersV,
+                       int numCardsLeftV) {
+  // HELLA CRAZY MCTS AND AI STUFF
+  return 0;
+}
+
+void Player::playCard() {
+  while (true) {
+    int card = rand() % 54;
+    if (cardsLeft.count(card) == 1) {
+      this->addCard(card);
+      cardsLeft.erase(card);
+      break;
+    }
   }
 }

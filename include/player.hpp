@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <queue>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -26,7 +27,7 @@ struct Hand {
   int straightFlush = 0;
   int quint = 0;
 
-  int score;
+  int value;
 
   Hand() {
     std::cout << "Hand constructor called" << std::endl;
@@ -35,7 +36,6 @@ struct Hand {
     cardsH = std::vector<bool>(14, false);
     cardsS = std::vector<bool>(14, false);
     cards = {cardsC, cardsD, cardsH, cardsS};
-    score = 0;
   }
 };
 
@@ -43,11 +43,22 @@ class Player {
  public:
   Player();
   ~Player();
+
+  Hand *hand;
+  int jokers;
+  int tricks;
+  std::set<int> cardsLeft;
+  int numCardsLeft;
+
   void addCard(int card);
   void addCard(std::string card);
-  Hand *hand;
-  void evaluateHand(Hand *hand);
   void printHand();
+
+  void evaluateHand(Hand *hand);
+
+  int turn(Hand *handV, int tricksV, int jokersV, int numCardsLeftV);
+  int shouldPlay(Hand *handV, int tricksV, int jokersV, int numCardsLeftV);
+  void playCard();
 };
 
 #endif  // PLAYER_HPP
