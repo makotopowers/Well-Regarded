@@ -7,10 +7,9 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(googletest)
 
-add_executable(test1 testing.cpp)
+add_executable(test1 ${CMAKE_SOURCE_DIR}/src/player.cpp testing.cpp )
 target_include_directories(test1 PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
 target_link_libraries(test1 gtest gtest_main)
 
-include(GoogleTest)
-gtest_discover_tests(test1)
+add_test(NAME test1 COMMAND test1)
