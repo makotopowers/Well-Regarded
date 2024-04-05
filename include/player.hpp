@@ -15,19 +15,7 @@ struct Hand {
   std::vector<bool> cardsD;
   std::vector<bool> cardsH;
   std::vector<bool> cardsS;
-
-  std::priority_queue<int, std::vector<int>, std::greater<int>> highCards;
-  int pair = 0;
-  int twoPair = 0;
-  int trips = 0;
-  int straight_ = 0;
-  int flush = 0;
-  int fullHouse = 0;
-  int quads = 0;
-  int straightFlush = 0;
-  int quint = 0;
-
-  int value;
+  std::vector<int> value;
 
   Hand() {
     std::cout << "Hand constructor called" << std::endl;
@@ -42,7 +30,9 @@ struct Hand {
 class Player {
  public:
   Player();
+  Player(std::string name);
   ~Player();
+  std::string name;
 
   Hand *hand;
   int jokers;
@@ -52,13 +42,17 @@ class Player {
 
   void addCard(int card);
   void addCard(std::string card);
-  void printHand();
+  void Log(std::string message, bool debug = true);
 
-  void evaluateHand(Hand *hand);
+  void resetHand();
+  void printCard(int card);
+  void printHand(std::vector<int> hand);
 
+  std::vector<int> evaluateHand(Hand *hand);
+  std::vector<int> test_evaluateHand(Hand *hand);
   int turn(Hand *handV, int tricksV, int jokersV, int numCardsLeftV);
   int shouldPlay(Hand *handV, int tricksV, int jokersV, int numCardsLeftV);
-  void playCard();
+  int playCard();
 };
 
 #endif  // PLAYER_HPP

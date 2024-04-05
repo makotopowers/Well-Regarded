@@ -1,20 +1,59 @@
 
 
+#include <csignal>
 #include <iostream>
 #include <string>
-#include "player.hpp"
+
 #include "gameHandler.hpp"
+#include "player.hpp"
 
-int main()
-{
-    std::cout << "Hello, World!" << std::endl;
+std::atomic<bool> segFault = false;
 
-    Player *player1 = new Player();
-    Player *player2 = new Player();
-    GameHandler gameHandler(player1, player2);
+void segFaultHandler(int sig) {
+  std::cout << "SEGFAULT CAUGHT" << std::endl;
+  segFault = true;
 
-    delete player1;
-    delete player2;
+  exit(1);
+}
 
-    return 0;
+int main() {
+  std::string intro =
+      "##  ##    ## ##   ##  ###             ##     ### ##   ### ###  \n"
+      "##  ##   ##   ##  ##   ##              ##     ##  ##   ##  ##    \n"
+      "##  ##   ##   ##  ##   ##            ## ##    ##  ##   ##         \n"
+      " ## ##   ##   ##  ##   ##            ##  ##   ## ##    ## ##     \n"
+      "  ##     ##   ##  ##   ##            ## ###   ## ##    ##       \n"
+      "  ##     ##   ##  ##   ##            ##  ##   ##  ##   ##  ##    \n"
+      "  ##      ## ##    ## ##            ###  ##  #### ##  ### ###    \n"
+      "\n"
+      "##   ##  ### ###  ####     ####              ### ##   ### ###   ## ##   "
+      "  ##     ### ##   ### ##   ### ###  ### ##  \n"
+      "##   ##   ##  ##   ##       ##                ##  ##   ##  ##  ##   ##  "
+      "   ##     ##  ##   ##  ##   ##  ##   ##  ##  \n"
+      "##   ##   ##       ##       ##                ##  ##   ##      ##       "
+      " ## ##    ##  ##   ##  ##   ##       ##  ##  \n"
+      "## # ##   ## ##    ##       ##                ## ##    ## ##   ##  ###  "
+      " ##  ##   ## ##    ##  ##   ## ##    ##  ##  \n"
+      "# ### #   ##       ##       ##                ## ##    ##      ##   ##  "
+      " ## ###   ## ##    ##  ##   ##       ##  ##  \n"
+      " ## ##    ##  ##   ##  ##   ##  ##            ##  ##   ##  ##  ##   ##  "
+      " ##  ##   ##  ##   ##  ##   ##  ##   ##  ##  \n"
+      "##   ##  ### ###  ### ###  ### ###           #### ##  ### ###   ## ##   "
+      "###  ##  #### ##  ### ##   ### ###  ### ##   \n";
+
+  std::cout << intro << std::endl;
+  std::cout << std::endl;
+
+  std::signal(SIGSEGV, segFaultHandler);
+
+  Player *player1 = new Player("Makoto");
+  Player *player2 = new Player("Rishi");
+  GameHandler gameHandler(player1, player2);
+  gameHandler.startGame();
+
+  if (segFault) {
+    gameHandler.~GameHandler();
+  }
+
+  return 0;
 }
