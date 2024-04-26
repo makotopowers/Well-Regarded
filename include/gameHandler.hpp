@@ -9,9 +9,10 @@
 
 class GameHandler {
  public:
-  GameHandler(Player *player1, Player *player2);
-  Player *player1;
-  Player *player2;
+  GameHandler(std::unique_ptr<Player> player1_,
+              std::unique_ptr<Player> player2_);
+  std::unique_ptr<Player> player1;
+  std::unique_ptr<Player> player2;
   void startGame();
   void endGame();
   void printPlayers();

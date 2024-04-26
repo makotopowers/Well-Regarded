@@ -48,7 +48,8 @@ int main() {
 
   Player *player1 = new Player("Makoto");
   Player *player2 = new Player("Rishi");
-  GameHandler gameHandler(player1, player2);
+  GameHandler gameHandler(std::make_unique<Player>(*player1),
+                          std::make_unique<Player>(*player2));
   gameHandler.startGame();
 
   if (segFault) {

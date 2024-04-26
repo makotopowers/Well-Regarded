@@ -5,21 +5,27 @@
 
 #include "player.hpp"
 
-GameHandler::GameHandler(Player *player1, Player *player2) {
-  this->Log("GameHandler constructor called");
+// #define debugPrint(x) std::cout << "[[DEBUG]] " << x << std::endl;
+#define debugPrint(x) ;
 
-  this->player1 = player1;
-  this->player2 = player2;
+GameHandler::GameHandler(std::unique_ptr<Player> player1_,
+                         std::unique_ptr<Player> player2_)
+    : player1(std::move(player1_)), player2(std::move(player2_)) {
+  /// @brief Constructor for GameHandler
+  /// @param player1_ std::unique_ptr<Player> for player1
+  /// @param player2_ std::unique_ptr<Player> for player2
+
+  this->Log("GameHandler constructor called");
 }
 
 GameHandler::~GameHandler() {
+  /// @brief Destructor for GameHandler
   this->Log("GameHandler destructor called");
-
-  delete player1;
-  delete player2;
 }
 
 void GameHandler::startGame() {
+  /// @brief Start the game
+
   this->Log("GameHandler startGame called");
   std::vector<int> p1hand;
   std::vector<int> p2hand;
@@ -83,6 +89,11 @@ void GameHandler::startGame() {
 }
 
 int GameHandler::compareHand(std::vector<int> p1hand, std::vector<int> p2hand) {
+  /// @brief Compare the hands of two players
+  /// @param p1hand std::vector<int> representing the hand of player 1
+  /// @param p2hand std::vector<int> representing the hand of player 2
+  /// @return 1 if player 1 is ahead, 2 if player 2 is ahead, 0 if tie
+
   for (int i = 0; i < p1hand.size(); i++) {
     if (p1hand[i] > p2hand[i]) {
       return 1;
@@ -96,6 +107,10 @@ int GameHandler::compareHand(std::vector<int> p1hand, std::vector<int> p2hand) {
 }
 
 void GameHandler::Log(std::string message, bool debug) {
+  /// @brief Log a message
+  /// @param message std::string message to log
+  /// @param debug bool whether to log the message
+
   if (debug) {
     std::cout << message << std::endl;
   }

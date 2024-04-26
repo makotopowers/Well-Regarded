@@ -27,7 +27,7 @@ cd Well-Regarded
 mkdir build && cd build
 cmake ..
 cmake --build .
-./regarded
+./Regarded
 ```
 
 ## To test
