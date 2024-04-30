@@ -4,11 +4,14 @@
 
 #include "player.hpp"
 
+bool Utilities::debug = false;
+
 Utilities::Utilities() {}
 Utilities::~Utilities() {}
 
-void Utilities::Log(std::string message, bool debug) {
-  if (debug) {
+void Utilities::Log(std::string message) {
+  if (Utilities::debug) {
+    std::cout << "[[LOG]] ";
     std::cout << message << std::endl;
   }
 }
@@ -29,4 +32,8 @@ int Utilities::compareHand(std::vector<int> p1hand, std::vector<int> p2hand) {
     }
   }
   return 0;
+}
+
+void Utilities::setDebug(bool debug) {
+  this->debug = debug;
 }

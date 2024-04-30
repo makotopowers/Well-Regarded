@@ -16,13 +16,15 @@ set(HEADERS
     ${PROJECT_SOURCE_DIR}/include/player.hpp
     ${PROJECT_SOURCE_DIR}/include/gameHandler.hpp
     ${PROJECT_SOURCE_DIR}/include/experiments.hpp
-    ${PROJECT_SOURCE_DIR}/include/utilities.hpp)
+    ${PROJECT_SOURCE_DIR}/include/utilities.hpp
+    ${PROJECT_SOURCE_DIR}/include/configReader.hpp)
 
 set(SOURCES
     ${PROJECT_SOURCE_DIR}/src/player.cpp
     ${PROJECT_SOURCE_DIR}/src/gameHandler.cpp
     ${PROJECT_SOURCE_DIR}/src/experiments.cpp
-    ${PROJECT_SOURCE_DIR}/src/utilities.cpp)
+    ${PROJECT_SOURCE_DIR}/src/utilities.cpp
+    ${PROJECT_SOURCE_DIR}/src/configReader.cpp)
 
 add_executable(${PROJECT_NAME}
                ${SOURCES}

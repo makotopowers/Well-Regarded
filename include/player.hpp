@@ -47,8 +47,7 @@ class Player {
   std::vector<int> playOrder;
 
   void addCard(int card);
-  void addCard(std::string card);
-  void Log(std::string message, bool debug = true);
+
   void setState(int tricks_, std::vector<int> playOrder_);
 
   void resetHand();
@@ -57,7 +56,6 @@ class Player {
   void printHand(std::vector<int> hand);
 
   std::vector<int> evaluateHand(std::shared_ptr<Hand> hand = nullptr);
-  // std::vector<int> evaluateHand();
   int turn(std::shared_ptr<Hand> handV, int tricksV, int jokersV, int numCardsLeftV);
   int shouldPlay(std::shared_ptr<Hand> handV, int tricksV, int jokersV, int numCardsLeftV);
   int playCard();

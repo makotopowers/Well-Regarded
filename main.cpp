@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 
+#include "configReader.hpp"
 #include "gameHandler.hpp"
 #include "player.hpp"
 #include "utilities.hpp"
@@ -47,11 +48,20 @@ int main() {
 
   std::signal(SIGSEGV, segFaultHandler);
 
-  Player *player1 = new Player("Makoto");
-  Player *player2 = new Player("Rishi");
-  GameHandler gameHandler(std::make_unique<Player>(*player1),
-                          std::make_unique<Player>(*player2));
-  gameHandler.startGame();
+  std::string confDir = "../conf/";
+  std::string confFile = "global.conf";
+  ConfigReader configReader;
+  configReader.readConfigFile(confDir + confFile);
+
+  Utilities utilities;
+  utilities.setDebug(configReader.returnConfigValue<int>("DEBUG"));
+  Utilities::Log("Debug mode enabled");
+  Utilities::Log(Utilities::debug ? "true" : "false");
+
+  Player* player1 = new Player("Makoto");
+  Player* player2 = new Player("Rishi");
+  GameHandler gameHandler(std::make_unique<Player>(*player1), std::make_unique<Player>(*player2));
+  // gameHandler.startGame();
 
   if (segFault) {
     gameHandler.~GameHandler();
