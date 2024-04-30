@@ -1,7 +1,5 @@
 #include "player.hpp"
 
-#include <algorithm>
-#include <numeric>
 #include <queue>
 #include <vector>
 
@@ -38,15 +36,17 @@ Player::~Player() {
   std::cout << "Player destructor called" << std::endl;
 }
 
-void Player::addCard(int card, bool joker) {
+void Player::addCard(int card) {
   /// @brief Add card to player's hand
   /// @param card Card to add
-  /// @param joker Whether the card is a joker
 
+  if (card > 53 || card < 0) {
+    throw std::invalid_argument("Invalid card");
+  }
   debugPrint("Adding card to hand " + std::to_string(card));
   if (card == 52 || card == 53) {
     hand->jokerAvailable = true;
-    hand->jokers++;
+    this->jokers++;
   } else {
     int suit = card / 13;
     int value = card % 13;
@@ -57,10 +57,10 @@ void Player::addCard(int card, bool joker) {
       hand->cards[suit][value] += 1;
     }
   }
+  playOrder.push_back(card);
 }
 
-int Player::turn(std::shared_ptr<Hand> handV, int tricksV, int jokersV,
-                 int numCardsLeftV) {
+int Player::turn(std::shared_ptr<Hand> handV, int tricksV, int jokersV, int numCardsLeftV) {
   /// @brief Player's turn
   /// @param handV Opponent's hand
   /// @param tricksV Opponent's tricks
@@ -88,8 +88,7 @@ int Player::turn(std::shared_ptr<Hand> handV, int tricksV, int jokersV,
   return yield;
 }
 
-int Player::shouldPlay(std::shared_ptr<Hand> handV, int tricksV, int jokersV,
-                       int numCardsLeftV) {
+int Player::shouldPlay(std::shared_ptr<Hand> handV, int tricksV, int jokersV, int numCardsLeftV) {
   /// @brief Determine if player should play
   /// @param handV Opponent's hand
   /// @param tricksV Opponent's tricks
@@ -108,24 +107,23 @@ int Player::playCard() {
   if (cardsLeft.size() < 1) {
     return 1;
   }
-  std::vector<int> cardsLeftVector =
-      std::vector<int>(cardsLeft.begin(), cardsLeft.end());
+  std::vector<int> cardsLeftVector = std::vector<int>(cardsLeft.begin(), cardsLeft.end());
   std::srand(static_cast<unsigned int>(std::time(nullptr) + rand()));
   int card = std::rand() % cardsLeft.size();
-  std::cout << this->name << ": " << cardsLeft.size() << " Cards Left"
-            << std::endl;
+  debugPrint(this->name + ": " + std::to_string(cardsLeft.size()) + " Cards Left");
   this->addCard(cardsLeftVector[card]);
   this->printCard(cardsLeftVector[card]);
   cardsLeft.erase(cardsLeftVector[card]);
-
   return 0;
 }
 
 void Player::resetHand() {
   /// @brief Reset player's hand
-  debugPrint(this->hand.use_count());  // NOTE: this should be 1
+
+  debugPrint("count" + std::to_string(this->hand.use_count()));  // NOTE: this should be 1
   this->hand.reset();
   this->hand = std::make_shared<Hand>();
+  playOrder.push_back(-1);
 }
 
 void Player::printCard(int card) {
@@ -133,19 +131,20 @@ void Player::printCard(int card) {
   /// @param card Card to print
 
   if (card == 52) {
-    std::cout << "JokerA" << std::endl;
+    std::cout << "JokerA"
+              << " 52" << std::endl;
     return;
   } else if (card == 53) {
-    std::cout << "JokerB" << std::endl;
+    std::cout << "JokerB"
+              << " 53" << std::endl;
     return;
   }
 
   int suit = (card) / 13;
   int value = (card) % 13;
   std::string suits[4] = {"c", "d", "h", "s"};
-  std::string values[13] = {"A", "2", "3",  "4", "5", "6", "7",
-                            "8", "9", "10", "J", "Q", "K"};
-  std::cout << values[value] << suits[suit] << std::endl;
+  std::string values[13] = {"A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"};
+  std::cout << values[value] << suits[suit] << " " << card << std::endl;
 }
 
 void Player::printHand(std::vector<int> hand) {
@@ -153,10 +152,8 @@ void Player::printHand(std::vector<int> hand) {
   /// @param hand Hand to print
 
   int h = hand[0];
-  std::string values[10] = {
-      "High Card",      "Pair",  "Two Pair",   "Three of a Kind",
-      "Straight",       "Flush", "Full House", "Four of a Kind",
-      "Straight Flush", "Quint"};
+  std::string values[10] = {"High Card", "Pair",       "Two Pair",       "Three of a Kind", "Straight",
+                            "Flush",     "Full House", "Four of a Kind", "Straight Flush",  "Quint"};
   std::cout << values[h] << " ";
   for (int i = 1; i < hand.size(); i++) {
     std::cout << hand[i] << " ";
@@ -174,15 +171,15 @@ void Player::Log(std::string message, bool debug) {
     std::cout << message << std::endl;
   }
 }
-
+// std::vector<int> Player::evaluateHand() { return evaluateHand(this->hand); }
 std::vector<int> Player::evaluateHand(std::shared_ptr<Hand> hand) {
   /// @brief Evaluate player's hand
   /// @param hand Player's hand
   /// @return Hand value
 
-  std::cout << "Starting Hand Evaluation" << std::endl;
-  bool debug = false;
-
+  if (hand == nullptr) {
+    hand = this->hand;
+  }
   debugPrint("Evaluating hand");
 
   std::priority_queue<int, std::vector<int>> highCards;
@@ -196,16 +193,17 @@ std::vector<int> Player::evaluateHand(std::shared_ptr<Hand> hand) {
   int straightFlush = 0;
   int quint = 0;
 
-  bool jokerAvailable = hand->jokerAvailable;
-  std::cout << "Joker Available: " << jokerAvailable << std::endl;
-  bool jokerEval = jokerAvailable;
-
+  bool jokerEval = hand->jokerAvailable;
   int currJokerValue = 0;
   int jokerSuit = 0;
   int jokerHandStrength = -1;
   int maxFlushSizeIndex = 0;
+  int countMax = 0;
+  int countIndex = 0;
 
   std::vector<int> straight;
+
+  debugPrint("jokerEval: " + std::to_string(jokerEval));
 
   int flushIndex = -1;
   std::vector<int> flushC = std::vector<int>();
@@ -216,20 +214,19 @@ std::vector<int> Player::evaluateHand(std::shared_ptr<Hand> hand) {
 
   std::vector<int> handValue;
 
-  int countMax = 0;
-  int countIndex = 0;
-
   debugPrint("Starting for loop");
   for (int i = 0; i < 14; i++) {
     int count = 0;
     for (int j = 0; j < 4; j++) {
       if (hand->cards[j][i] > 0) {
         count += hand->cards[j][i];
-        flushes[j].push_back(i + 1);
+        if (i != 0) {
+          flushes[j].push_back(i + 1);
+        }
       }
     }
 
-    if (count > countMax) {  // for checking where the joker should go later on
+    if (count >= countMax) {  // for checking where the joker should go later on
       countMax = count;
       countIndex = i;
     }
@@ -237,235 +234,193 @@ std::vector<int> Player::evaluateHand(std::shared_ptr<Hand> hand) {
     debugPrint("Checkpoint A");
     debugPrint("Count: " + std::to_string(count) + " for " + std::to_string(i));
     if (i != 0) {  // initial switch to see what hands we have made
-      switch (count) {
-        case 0:
-          continue;
-        case 4:
-          quads = i + 1;
-          break;
-        case 3:
-          std::cout << "Trips: " << trips << std::endl;
-          std::cout << "Pair: " << pair << std::endl;
-
-          if (trips > 0 && trips > pair) {
-            pair = trips;
-            trips = i + 1;
-            fullHouse = trips;
-          } else if (pair > 0) {
-            trips = i + 1;
-            fullHouse = i + 1;
-          } else {
-            trips = i + 1;
-          }
-          break;
-        case 2:
-          if (trips > 0) {
-            fullHouse = trips;
-            pair = i + 1;
-          } else if (twoPair > 0) {
-            pair = twoPair;
-            twoPair = i + 1;
-          } else if (pair > 0) {
-            twoPair = i + 1;
-          } else {
-            pair = i + 1;
-          }
-          break;
-        default:
-          highCards.push(i + 1);
-          break;
-      }
+      checkCountHands(count, i, pair, twoPair, trips, straight_, flush, fullHouse, quads, straightFlush, quint, highCards, currJokerValue,
+                      jokerHandStrength, false);
+      // switch (count) {
+      //   case 0:
+      //     continue;
+      //   case 4:
+      //     quads = i + 1;
+      //     break;
+      //   case 3:
+      //     if (trips > 0 && trips > pair) {
+      //       pair = trips;
+      //       trips = i + 1;
+      //       fullHouse = trips;
+      //     } else if (pair > 0) {
+      //       trips = i + 1;
+      //       fullHouse = i + 1;
+      //     } else {
+      //       trips = i + 1;
+      //     }
+      //     break;
+      //   case 2:
+      //     if (trips > 0) {
+      //       fullHouse = trips;
+      //       pair = i + 1;
+      //     } else if (twoPair > 0) {
+      //       pair = twoPair;
+      //       twoPair = i + 1;
+      //     } else if (pair > 0) {
+      //       twoPair = i + 1;
+      //     } else {
+      //       pair = i + 1;
+      //     }
+      //     break;
+      //   default:
+      //     highCards.push(i + 1);
+      //     break;
+      // }
     }
 
     debugPrint("Checkpoint B");
+
+    // & straight, jokerEval, & currJokerValue, & jokerHandStrength
+
     if (count > 0) {
       straight.push_back(i + 1);
-      if (straight.size() > 4) {
-        if (straight[straight.size() - 1] - straight[straight.size() - 5] ==
-            4) {
-          straight_ = straight.back();
-        }
-      }
-      if (straight.size() > 3 && jokerEval) {
-        if (straight[straight.size() - 1] - straight[straight.size() - 4] ==
-            4) {
-          currJokerValue =
-              (straight[straight.size() - 1] * straight[straight.size() - 1] -
-               1) /
-                  2 -
-              (straight[straight.size() - 4] * straight[straight.size() - 4] -
-               1) /
-                  2 -
-              std::accumulate(straight.end() - 4, straight.end(), 0);
-          straight_ = straight.back();
-          jokerHandStrength = 4;
-        } else if (straight[straight.size() - 1] -
-                       straight[straight.size() - 4] ==
-                   3) {
-          currJokerValue = straight[straight.size() - 1] == 14
-                               ? 10
-                               : straight[straight.size() - 1] + 1;
-          straight_ = std::max(straight.back(), currJokerValue);
-          jokerHandStrength = 4;
-        }
-      }
-
-      jokerAvailable = jokerEval;
-
+      straightEval(straight, straight_, jokerEval, currJokerValue, jokerHandStrength);
       debugPrint("Checkpoint B");
-
-      for (int j = 0; j < 4; j++) {
-        maxFlushSizeIndex =
-            flushes[j].size() > flushes[maxFlushSizeIndex].size()
-                ? j
-                : maxFlushSizeIndex;
-        if (flushes[j].size() > 3 && jokerEval) {
-          if (flushes[j][flushes[j].size() - 1] -
-                  flushes[j][flushes[j].size() - 4] ==
-              4) {
-            currJokerValue =
-                (flushes[j][flushes[j].size() - 1] *
-                     flushes[j][flushes[j].size() - 1] -
-                 1) /
-                    2 -
-                (flushes[j][flushes[j].size() - 5] *
-                     flushes[j][flushes[j].size() - 5] -
-                 1) /
-                    2 -
-                std::accumulate(flushes[j].end() - 5, flushes[j].end(), 0);
-            straightFlush = flushes[j][flushes[j].size() - 1];
-            jokerSuit = j;
-            jokerHandStrength = 8;
-          } else if (flushes[j][flushes[j].size() - 1] -
-                         flushes[j][flushes[j].size() - 4] ==
-                     3) {
-            currJokerValue = flushes[j][flushes[j].size() - 1] == 14
-                                 ? 10
-                                 : flushes[j][flushes[j].size() - 1] + 1;
-            straightFlush = std::max(currJokerValue, flushes[j].back());
-            jokerSuit = j;
-            jokerHandStrength = 8;
-          }
-        }
-        if (flushes[j].size() > 4) {
-          if (flushes[j][flushes[j].size() - 1] -
-                  flushes[j][flushes[j].size() - 5] ==
-              4) {
-            straightFlush = flushes[j][flushes[j].size() - 1];
-          }
-
-          if (flushIndex == -1) {
-            flushIndex = j;
-          } else {
-            for (int k = 0; k < 5; k++) {
-              if (flushes[j][flushes[j].size() - 1 - k] >
-                  flushes[flushIndex][flushes[flushIndex].size() - 1 - k]) {
-                flushIndex = j;
-              } else if (flushes[j][flushes[j].size() - 1 - k] <
-                         flushes[flushIndex]
-                                [flushes[flushIndex].size() - 1 - k]) {
-                break;
-              }
-            }
-          }
-          flush = flushes[flushIndex][flushes[flushIndex].size() - 1];
-        }
-      }
+      flushEval(maxFlushSizeIndex, jokerEval, flushes, currJokerValue, jokerSuit, jokerHandStrength, straightFlush, flush, flushIndex);
     }
   }
 
   debugPrint("finished for loop");
 
-  if (jokerEval && jokerHandStrength < 5 &&
-      flushes[maxFlushSizeIndex].size() > 3) {
-    if (flush != 0) {
-      flushes[flushIndex].push_back(14);
-      jokerSuit = flushIndex;
-      flush = 14;
-    } else if (flushes[maxFlushSizeIndex].size() == 4) {
-      flushes[maxFlushSizeIndex].push_back(14);
-      jokerSuit = maxFlushSizeIndex;
-      flush = 14;
-      flushIndex = maxFlushSizeIndex;
-    }
-    currJokerValue = 14;
-    jokerHandStrength = 5;
-  }
-  if (jokerEval && jokerHandStrength < 5) {
-    jokerSuit = maxFlushSizeIndex;
-  }
+  NormieFlush(jokerEval, jokerHandStrength, jokerSuit, flush, flushIndex, currJokerValue, maxFlushSizeIndex, flushes);
 
   debugPrint("Checking Joker Hands");
-  if (jokerAvailable) {
-    debugPrint("CountMax" + std::to_string(countMax) + " CountIndex " +
-               std::to_string(countIndex));
+  if (jokerEval) {
+    debugPrint("CountMax" + std::to_string(countMax) + " CountIndex " + std::to_string(countIndex));
     countIndex = countMax == 0 ? 13 : countIndex;
-    switch (countMax + 1) {
-      case 5:
-        quint = countIndex + 1;
-        break;
-      case 4:
-        if (jokerHandStrength < 8) {
-          quads = countIndex + 1;
-          currJokerValue = quads;
-          jokerHandStrength = 7;
-        }
-        break;
-      case 3:
-        if (jokerHandStrength < 4) {
-          if (trips > 0 && trips > pair) {
-            pair = trips;
-            trips = countIndex + 1;
-            fullHouse = trips;
-            jokerHandStrength = 6;
-          } else if (pair > 0) {
-            trips = countIndex + 1;
-            fullHouse = countIndex + 1;
-            jokerHandStrength = 6;
-          } else {
-            trips = countIndex + 1;
-            jokerHandStrength = 3;
-          }
-          currJokerValue = trips;
-        }
-        break;
-      case 2:
-        debugPrint("Case 2, jokerHandStrength: " +
-                   std::to_string(jokerHandStrength));
-        if (jokerHandStrength < 7 && trips > 0) {
-          fullHouse = trips;
-          pair = countIndex + 1;
-        } else if (jokerHandStrength < 3) {
-          if (twoPair > 0) {
-            pair = twoPair;
-            twoPair = countIndex + 1;
-            jokerHandStrength = 2;
-            currJokerValue = twoPair;
-          } else if (pair > 0) {
-            twoPair = countIndex + 1;
-            jokerHandStrength = 2;
-            currJokerValue = twoPair;
-          } else {
-            pair = countIndex + 1;
-            jokerHandStrength = 1;
-            currJokerValue = pair;
-          }
-        }
-        break;
-      case 1:
-        if (jokerHandStrength < 1) highCards.push(14);
-        currJokerValue = 14;
-        jokerHandStrength = 0;
-        break;
+    checkCountHands(countMax, countIndex, pair, twoPair, trips, straight_, flush, fullHouse, quads, straightFlush, quint, highCards,
+                    currJokerValue, jokerHandStrength, jokerEval);
+    // switch (countMax + 1) {
+    //   case 5:
+    //     quint = countIndex + 1;
+    //     currJokerValue = quint;
+    //     jokerHandStrength = 9;
+    //     break;
+    //   case 4:
+    //     if (jokerHandStrength < 8) {
+    //       quads = countIndex + 1;
+    //       currJokerValue = quads;
+    //       jokerHandStrength = 7;
+    //     }
+    //     break;
+    //   case 3:
+    //     if (jokerHandStrength < 4) {
+    //       if (trips > 0 && trips > pair) {
+    //         pair = trips;
+    //         trips = countIndex + 1;
+    //         fullHouse = trips;
+    //         jokerHandStrength = 6;
+    //       } else if (pair > 0) {
+    //         trips = countIndex + 1;
+    //         fullHouse = countIndex + 1;
+    //         jokerHandStrength = 6;
+    //       } else {
+    //         trips = countIndex + 1;
+    //         jokerHandStrength = 3;
+    //       }
+    //       currJokerValue = trips;
+    //     }
+    //     break;
+    //   case 2:
+    //     if (jokerHandStrength < 7 && trips > 0) {
+    //       fullHouse = trips;
+    //       pair = countIndex + 1;
+    //     } else if (jokerHandStrength < 3) {
+    //       if (twoPair > 0) {
+    //         pair = twoPair;
+    //         twoPair = countIndex + 1;
+    //         jokerHandStrength = 2;
+    //         currJokerValue = twoPair;
+    //       } else if (pair > 0) {
+    //         twoPair = countIndex + 1;
+    //         jokerHandStrength = 2;
+    //         currJokerValue = twoPair;
+    //       } else {
+    //         pair = countIndex + 1;
+    //         jokerHandStrength = 1;
+    //         currJokerValue = pair;
+    //       }
+    //     }
+    //     break;
+    //   case 1:
+    //     if (jokerHandStrength < 1)
+    //       highCards.push(14);
+    //     currJokerValue = 14;
+    //     jokerHandStrength = 0;
+    //     break;
 
-      default:
-        break;
-    }
+    //   default:
+    //     break;
+    // }
   }
 
   debugPrint("Checking Normal Hands");
 
-  if (straightFlush > 0) {
+  addToHand(pair, twoPair, trips, straight_, flush, fullHouse, quads, straightFlush, quint, highCards, handValue, flushes, flushIndex);
+
+  if (jokerHandStrength != 5 && jokerHandStrength != 8) {
+    jokerSuit = maxFlushSizeIndex;
+  }
+  if (jokerEval) {
+    if (currJokerValue == 14) {
+      currJokerValue = 1;
+    }
+    this->addCard(jokerSuit * 13 + currJokerValue - 1);
+  }
+
+  debugPrint("Hand Evaluation Finished");
+  hand->jokerAvailable = false;
+
+  hand->value = handValue;
+  return handValue;
+}
+
+void Player::setState(int tricks_, std::vector<int> playOrder_) {
+  /// @brief Set player's hand
+  /// @param playOrder_ Play order up to some point in the game
+
+  this->resetPlayer();
+
+  this->tricks = tricks_;
+  hand = std::make_shared<Hand>();
+  this->hand.swap(hand);
+
+  for (int i = 0; i < playOrder_.size(); i++) {
+    this->addCard(playOrder_[i]);
+    if (playOrder_[i] == 52 || playOrder_[i] == 53) {
+      this->evaluateHand();
+    }
+  }
+  this->playOrder = playOrder_;
+}
+
+void Player::resetPlayer() {
+  /// @brief Reset player
+
+  this->tricks = 0;
+  this->playOrder.clear();
+  this->hand.reset();
+  this->hand = std::make_shared<Hand>();
+  this->cardsLeft.clear();
+  for (int i = 0; i < 54; i++) {
+    cardsLeft.insert(i);
+  }
+  this->numCardsLeft = 54;
+  this->jokers = 0;
+}
+
+void Player::addToHand(int pair, int twoPair, int trips, int straight_, int flush, int fullHouse, int quads, int straightFlush, int quint,
+                       std::priority_queue<int, std::vector<int>>& highCards, std::vector<int>& handValue,
+                       std::vector<std::vector<int>>& flushes, int flushIndex) {
+  if (quint > 0) {
+    handValue.push_back(9);
+    handValue.push_back(quint);
+  } else if (straightFlush > 0) {
     handValue.push_back(8);
     handValue.push_back(straightFlush);
   } else if (quads > 0) {
@@ -484,8 +439,7 @@ std::vector<int> Player::evaluateHand(std::shared_ptr<Hand> hand) {
   } else if (flush > 0) {
     handValue.push_back(5);
     for (int i = 0; i < 5; i++) {
-      handValue.push_back(
-          flushes[flushIndex][flushes[flushIndex].size() - 1 - i]);
+      handValue.push_back(flushes[flushIndex][flushes[flushIndex].size() - 1 - i]);
     }
   } else if (straight_ > 0) {
     handValue.push_back(4);
@@ -500,7 +454,6 @@ std::vector<int> Player::evaluateHand(std::shared_ptr<Hand> hand) {
       }
     }
   } else if (twoPair > 0) {
-    debugPrint("Two Pair: " + std::to_string(twoPair));
     handValue.push_back(2);
     handValue.push_back(twoPair);
     handValue.push_back(pair);
@@ -551,30 +504,177 @@ std::vector<int> Player::evaluateHand(std::shared_ptr<Hand> hand) {
   while (handValue.size() < 6) {
     handValue.push_back(0);
   }
+}
 
-  if (jokerHandStrength != 5 && jokerHandStrength != 8) {
+void Player::straightEval(std::vector<int>& straight, int& straight_, bool jokerEval, int& currJokerValue, int& jokerHandStrength) {
+
+  if (straight.size() > 4) {
+    if (straight[straight.size() - 1] - straight[straight.size() - 5] == 4) {
+      straight_ = straight.back();
+    }
+  }
+  if (straight.size() > 3 && jokerEval) {
+    if (straight[straight.size() - 1] - straight[straight.size() - 4] == 4) {
+      // currJokerValue = ((straight[straight.size() - 1]) * (straight[straight.size() - 1] + 1)) / 2 -
+      //                  (straight[straight.size() - 4] - 1) * ((straight[straight.size() - 4] - 1) + 1) / 2 -
+      //                  std::accumulate(straight.end() - 4, straight.end(), 0);
+      currJokerValue = findMissing(straight);
+      straight_ = straight.back();
+      jokerHandStrength = 4;
+    } else if (straight[straight.size() - 1] - straight[straight.size() - 4] == 3) {
+      currJokerValue = straight[straight.size() - 1] == 14 ? 10 : straight[straight.size() - 1] + 1;
+      straight_ = std::max(straight.back(), currJokerValue);
+      jokerHandStrength = 4;
+    }
+  }
+}
+
+void Player::flushEval(int& maxFlushSizeIndex, bool jokerEval, std::vector<std::vector<int>>& flushes, int& currJokerValue, int& jokerSuit,
+                       int& jokerHandStrength, int& straightFlush, int& flush, int& flushIndex) {
+
+  for (int j = 0; j < 4; j++) {
+    maxFlushSizeIndex = flushes[j].size() > flushes[maxFlushSizeIndex].size() ? j : maxFlushSizeIndex;
+    if (flushes[j].size() > 3 && jokerEval) {
+      if (flushes[j][flushes[j].size() - 1] - flushes[j][flushes[j].size() - 4] == 4) {
+        // currJokerValue = ((flushes[j][flushes[j].size() - 1]) * (flushes[j][flushes[j].size() - 1] + 1)) / 2 -
+        //                  (((flushes[j][flushes[j].size() - 4] - 1)) * ((flushes[j][flushes[j].size() - 4] - 1) + 1)) / 2 -
+        //                  std::accumulate(flushes[j].end() - 4, flushes[j].end(), 0);
+
+        currJokerValue = findMissing(flushes[j]);
+
+        straightFlush = flushes[j][flushes[j].size() - 1];
+        jokerSuit = j;
+        jokerHandStrength = 8;
+
+      } else if (flushes[j][flushes[j].size() - 1] - flushes[j][flushes[j].size() - 4] == 3) {
+        currJokerValue = flushes[j][flushes[j].size() - 1] == 14 ? 10 : flushes[j][flushes[j].size() - 1] + 1;
+        straightFlush = std::max(currJokerValue, flushes[j].back());
+        jokerSuit = j;
+        jokerHandStrength = 8;
+      }
+    }
+    if (flushes[j].size() > 4) {
+      if (flushes[j][flushes[j].size() - 1] - flushes[j][flushes[j].size() - 5] == 4) {
+        straightFlush = flushes[j][flushes[j].size() - 1];
+      }
+
+      if (flushIndex == -1) {
+        flushIndex = j;
+      } else {
+        for (int k = 0; k < 5; k++) {
+          if (flushes[j][flushes[j].size() - 1 - k] > flushes[flushIndex][flushes[flushIndex].size() - 1 - k]) {
+            flushIndex = j;
+          } else if (flushes[j][flushes[j].size() - 1 - k] < flushes[flushIndex][flushes[flushIndex].size() - 1 - k]) {
+            break;
+          }
+        }
+      }
+      flush = flushes[flushIndex][flushes[flushIndex].size() - 1];
+      debugPrint("Flush: " + std::to_string(flush));
+    }
+  }
+}
+
+void Player::NormieFlush(int jokerEval, int& jokerHandStrength, int& jokerSuit, int& flush, int& flushIndex, int& currJokerValue,
+                         int& maxFlushSizeIndex, std::vector<std::vector<int>>& flushes) {
+  if (jokerEval && jokerHandStrength < 5 && flushes[maxFlushSizeIndex].size() > 3) {
+    if (flush != 0) {
+      flushes[flushIndex].push_back(14);
+      jokerSuit = flushIndex;
+      flush = 14;
+    } else if (flushes[maxFlushSizeIndex].size() == 4) {
+      flushes[maxFlushSizeIndex].push_back(14);
+      jokerSuit = maxFlushSizeIndex;
+      flush = 14;
+      flushIndex = maxFlushSizeIndex;
+    }
+    currJokerValue = 14;
+    jokerHandStrength = 5;
+  }
+  if (jokerEval && jokerHandStrength < 5) {
     jokerSuit = maxFlushSizeIndex;
   }
+}
+
+void Player::checkCountHands(int count, int countIndex, int& pair, int& twoPair, int& trips, int& straight_, int& flush, int& fullHouse,
+                             int& quads, int& straightFlush, int& quint, std::priority_queue<int, std::vector<int>>& highCards,
+                             int currJokerValue, int jokerHandStrength, int jokerEval) {
+
+  int tempCurrJokerValue;
+  int tempJokerHandStrength;
   if (jokerEval) {
-    if (currJokerValue == 14) {
-      currJokerValue = 1;
-    }
-    std::cout << "Joker Evaluated" << std::endl;
-    std::cout << "Joker Suit: " << jokerSuit << std::endl;
-    std::cout << "Joker Value: " << currJokerValue << std::endl;
-    printCard(jokerSuit * 13 + currJokerValue - 1);
-    this->addCard(jokerSuit * 13 + currJokerValue - 1, true);
+    tempCurrJokerValue = currJokerValue;
+    tempJokerHandStrength = jokerHandStrength;
+    jokerHandStrength = -1;
+  }
+  switch (count) {
+    case 5:
+      quint = countIndex + 1;
+      currJokerValue = quint;
+      jokerHandStrength = 9;
+      break;
+    case 4:
+      if (jokerHandStrength < 8) {
+        quads = countIndex + 1;
+        currJokerValue = quads;
+        jokerHandStrength = 7;
+      }
+      break;
+    case 3:
+      if (jokerHandStrength < 4) {
+        if (trips > 0 && trips > pair) {
+          pair = trips;
+          trips = countIndex + 1;
+          fullHouse = trips;
+          jokerHandStrength = 6;
+        } else if (pair > 0) {
+          trips = countIndex + 1;
+          fullHouse = countIndex + 1;
+          jokerHandStrength = 6;
+        } else {
+          trips = countIndex + 1;
+          jokerHandStrength = 3;
+        }
+        currJokerValue = trips;
+      }
+      break;
+    case 2:
+      if (jokerHandStrength < 7 && trips > 0) {
+        fullHouse = trips;
+        pair = countIndex + 1;
+      } else if (jokerHandStrength < 3) {
+        if (twoPair > 0) {
+          pair = twoPair;
+          twoPair = countIndex + 1;
+          jokerHandStrength = 2;
+          currJokerValue = twoPair;
+        } else if (pair > 0) {
+          twoPair = countIndex + 1;
+          jokerHandStrength = 2;
+          currJokerValue = twoPair;
+        } else {
+          pair = countIndex + 1;
+          jokerHandStrength = 1;
+          currJokerValue = pair;
+        }
+      }
+      break;
+    case 1:
+      if (jokerEval && jokerHandStrength < 1) {
+        highCards.push(14);
+        currJokerValue = 14;
+        jokerHandStrength = 0;
+      } else {
+        highCards.push(countIndex + 1);
+      }
+      break;
+
+    default:
+      break;
   }
 
-  debugPrint("Hand Evaluation Finished");
-  hand->jokerAvailable = false;
-
-  std::cout << "handValue: " << std::endl;
-  for (auto _ : handValue) {
-    std::cout << _ << " ";
+  if (jokerEval) {
+    currJokerValue = tempCurrJokerValue;
+    jokerHandStrength = tempJokerHandStrength;
   }
-  std::cout << std::endl;
-
-  hand->value = handValue;
-  return handValue;
 }

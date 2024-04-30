@@ -6,6 +6,7 @@
 
 #include "gameHandler.hpp"
 #include "player.hpp"
+#include "utilities.hpp"
 
 std::atomic<bool> segFault = false;
 
