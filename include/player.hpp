@@ -8,26 +8,30 @@
 #include <set>
 #include <string>
 #include <vector>
+#include "utilities.hpp"
 
 enum class Suit { C, D, H, S };
 
 struct Hand {
   std::vector<std::vector<int>> cards;
-  std::vector<int> cardsC;
-  std::vector<int> cardsD;
-  std::vector<int> cardsH;
-  std::vector<int> cardsS;
   std::vector<int> value;
   int jokers;
   bool jokerAvailable;
 
   Hand() {
-    std::cout << "Hand constructor called" << std::endl;
-    cardsC = std::vector<int>(14, 0);
-    cardsD = std::vector<int>(14, 0);
-    cardsH = std::vector<int>(14, 0);
-    cardsS = std::vector<int>(14, 0);
-    cards = {cardsC, cardsD, cardsH, cardsS};
+    Utilities::Debug("Hand constructor called");
+    cards = {std::vector<int>(14, 0), std::vector<int>(14, 0), std::vector<int>(14, 0), std::vector<int>(14, 0)};
+  }
+
+  Hand(const std::unique_ptr<Hand>& hand_) {
+    Utilities::Debug("Hand copy constructor called");
+    for (auto i : hand_->cards[0]) {
+      Utilities::Debug("i: " + std::to_string(i));
+    }
+    cards = hand_->cards;
+    value = hand_->value;
+    jokers = hand_->jokers;
+    jokerAvailable = hand_->jokerAvailable;
   }
 };
 
@@ -35,10 +39,11 @@ class Player {
  public:
   Player();
   Player(std::string name);
+  Player(std::unique_ptr<Player>& player_);  // copy constructor
   ~Player();
   std::string name;
 
-  std::shared_ptr<Hand> hand;
+  std::unique_ptr<Hand> hand;
 
   int tricks;
   int jokers;
@@ -53,11 +58,12 @@ class Player {
   void resetHand();
   void resetPlayer();
   void printCard(int card);
-  void printHand(std::vector<int> hand);
+  std::string printHand(std::vector<int> hand);
 
-  std::vector<int> evaluateHand(std::shared_ptr<Hand> hand = nullptr);
-  int turn(std::shared_ptr<Hand> handV, int tricksV, int jokersV, int numCardsLeftV);
-  int shouldPlay(std::shared_ptr<Hand> handV, int tricksV, int jokersV, int numCardsLeftV);
+  std::vector<int> evaluateHand();
+  std::vector<int> evaluateHand(std::unique_ptr<Hand>& hand);
+  int turn(std::unique_ptr<Hand>& handV, int tricksV, int jokersV, int numCardsLeftV);
+  int shouldPlay(std::unique_ptr<Hand>& handV, int tricksV, int jokersV, int numCardsLeftV);
   int playCard();
 
  private:
@@ -78,7 +84,7 @@ class Player {
 
   void checkCountHands(int count, int countIndex, int& pair, int& twoPair, int& trips, int& straight_, int& flush, int& fullHouse,
                        int& quads, int& straightFlush, int& quint, std::priority_queue<int, std::vector<int>>& highCards,
-                       int currJokerValue, int jokerHandStrength, int JokerEval);
+                       int& currJokerValue, int& jokerHandStrength, int JokerEval);
 };
 
 #endif  // PLAYER_HPP

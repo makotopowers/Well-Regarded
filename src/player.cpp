@@ -7,8 +7,8 @@
 Player::Player() {
   /// @brief Default constructor for Player
 
-  std::cout << "Player constructor called" << std::endl;
-  hand = std::make_shared<Hand>();
+  Utilities::Debug("Player constructor called");
+  hand = std::make_unique<Hand>();
   cardsLeft = std::set<int>();
   for (int i = 0; i < 54; i++) {
     cardsLeft.insert(i);
@@ -20,18 +20,35 @@ Player::Player(std::string name) {
   /// @param name Name of the player
 
   this->name = name;
-  std::cout << "Player constructor called" << std::endl;
-  std::cout << "My name is " << this->name << std::endl;
-  hand = std::make_shared<Hand>();
+  Utilities::Debug("Player constructor called");
+  Utilities::Debug("My name is " + this->name);
+
+  hand = std::make_unique<Hand>();
   cardsLeft = std::set<int>();
   for (int i = 0; i < 54; i++) {
     cardsLeft.insert(i);
   }
 }
 
+Player::Player(std::unique_ptr<Player>& player_) {
+  /// @brief Copy constructor for Player
+  /// @param player_ Player to copy
+
+  Utilities::Debug("Player copy constructor called");
+  this->name = player_->name;
+  std::unique_ptr<Hand> hand_(new Hand(player_->hand));
+  this->hand = std::move(hand_);
+  this->tricks = player_->tricks;
+  this->jokers = player_->jokers;
+  this->cardsLeft = player_->cardsLeft;
+  this->numCardsLeft = player_->numCardsLeft;
+
+  this->playOrder = player_->playOrder;
+}
+
 Player::~Player() {
   /// @brief Destructor for Player
-  std::cout << "Player destructor called" << std::endl;
+  Utilities::Debug("Player destructor called");
 }
 
 void Player::addCard(int card) {
@@ -41,7 +58,7 @@ void Player::addCard(int card) {
   if (card > 53 || card < 0) {
     throw std::invalid_argument("Invalid card");
   }
-  Utilities::Log("Adding card to hand " + std::to_string(card));
+  Utilities::Debug("Adding card to hand " + std::to_string(card));
   if (card == 52 || card == 53) {
     hand->jokerAvailable = true;
     this->jokers++;
@@ -58,7 +75,7 @@ void Player::addCard(int card) {
   playOrder.push_back(card);
 }
 
-int Player::turn(std::shared_ptr<Hand> handV, int tricksV, int jokersV, int numCardsLeftV) {
+int Player::turn(std::unique_ptr<Hand>& handV, int tricksV, int jokersV, int numCardsLeftV) {
   /// @brief Player's turn
   /// @param handV Opponent's hand
   /// @param tricksV Opponent's tricks
@@ -76,7 +93,7 @@ int Player::turn(std::shared_ptr<Hand> handV, int tricksV, int jokersV, int numC
       if (yield == 1) {
         break;
       }
-      Utilities::Log("Card played");
+      Utilities::Debug("Card played");
       evaluateHand(this->hand);
       printHand(this->hand->value);
     }
@@ -86,7 +103,7 @@ int Player::turn(std::shared_ptr<Hand> handV, int tricksV, int jokersV, int numC
   return yield;
 }
 
-int Player::shouldPlay(std::shared_ptr<Hand> handV, int tricksV, int jokersV, int numCardsLeftV) {
+int Player::shouldPlay(std::unique_ptr<Hand>& handV, int tricksV, int jokersV, int numCardsLeftV) {
   /// @brief Determine if player should play
   /// @param handV Opponent's hand
   /// @param tricksV Opponent's tricks
@@ -108,7 +125,7 @@ int Player::playCard() {
   std::vector<int> cardsLeftVector = std::vector<int>(cardsLeft.begin(), cardsLeft.end());
   std::srand(static_cast<unsigned int>(std::time(nullptr) + rand()));
   int card = std::rand() % cardsLeft.size();
-  Utilities::Log(this->name + ": " + std::to_string(cardsLeft.size()) + " Cards Left");
+  Utilities::Debug(this->name + ": " + std::to_string(cardsLeft.size()) + " Cards Left");
   this->addCard(cardsLeftVector[card]);
   this->printCard(cardsLeftVector[card]);
   cardsLeft.erase(cardsLeftVector[card]);
@@ -118,9 +135,8 @@ int Player::playCard() {
 void Player::resetHand() {
   /// @brief Reset player's hand
 
-  Utilities::Log("count" + std::to_string(this->hand.use_count()));  // NOTE: this should be 1
   this->hand.reset();
-  this->hand = std::make_shared<Hand>();
+  this->hand = std::make_unique<Hand>();
   playOrder.push_back(-1);
 }
 
@@ -129,12 +145,11 @@ void Player::printCard(int card) {
   /// @param card Card to print
 
   if (card == 52) {
-    std::cout << "JokerA"
-              << " 52" << std::endl;
+
+    Utilities::Debug("JokerA 52");
     return;
   } else if (card == 53) {
-    std::cout << "JokerB"
-              << " 53" << std::endl;
+    Utilities::Debug("JokerB 53");
     return;
   }
 
@@ -142,33 +157,39 @@ void Player::printCard(int card) {
   int value = (card) % 13;
   std::string suits[4] = {"c", "d", "h", "s"};
   std::string values[13] = {"A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"};
-  std::cout << values[value] << suits[suit] << " " << card << std::endl;
+
+  Utilities::Debug(values[value] + suits[suit] + " " + std::to_string(card));
 }
 
-void Player::printHand(std::vector<int> hand) {
+std::string Player::printHand(std::vector<int> hand) {
   /// @brief Print hand
   /// @param hand Hand to print
+
+  std::string ret;
 
   int h = hand[0];
   std::string values[10] = {"High Card", "Pair",       "Two Pair",       "Three of a Kind", "Straight",
                             "Flush",     "Full House", "Four of a Kind", "Straight Flush",  "Quint"};
-  std::cout << values[h] << " ";
-  for (int i = 1; i < hand.size(); i++) {
-    std::cout << hand[i] << " ";
-  }
 
-  std::cout << std::endl;
+  Utilities::Debug(values[h] + " ");
+  ret += values[h] + " ";
+  for (int i = 1; i < hand.size(); i++) {
+    ret += std::to_string(hand[i]) + " ";
+
+    Utilities::Debug(std::to_string(hand[i]));
+  }
+  return ret;
 }
 
-std::vector<int> Player::evaluateHand(std::shared_ptr<Hand> hand) {
+std::vector<int> Player::evaluateHand() {
+  return evaluateHand(this->hand);
+}
+std::vector<int> Player::evaluateHand(std::unique_ptr<Hand>& hand) {
   /// @brief Evaluate player's hand
   /// @param hand Player's hand
   /// @return Hand value
 
-  if (hand == nullptr) {
-    hand = this->hand;
-  }
-  Utilities::Log("Evaluating hand");
+  Utilities::Debug("Evaluating hand");
 
   std::priority_queue<int, std::vector<int>> highCards;
   int pair = 0;
@@ -191,7 +212,7 @@ std::vector<int> Player::evaluateHand(std::shared_ptr<Hand> hand) {
 
   std::vector<int> straight;
 
-  Utilities::Log("jokerEval: " + std::to_string(jokerEval));
+  Utilities::Debug("jokerEval: " + std::to_string(jokerEval));
 
   int flushIndex = -1;
   std::vector<int> flushC = std::vector<int>();
@@ -202,7 +223,7 @@ std::vector<int> Player::evaluateHand(std::shared_ptr<Hand> hand) {
 
   std::vector<int> handValue;
 
-  Utilities::Log("Starting for loop");
+  Utilities::Debug("Starting for loop");
   for (int i = 0; i < 14; i++) {
     int count = 0;
     for (int j = 0; j < 4; j++) {
@@ -218,14 +239,14 @@ std::vector<int> Player::evaluateHand(std::shared_ptr<Hand> hand) {
       countIndex = i;
     }
 
-    Utilities::Log("Checkpoint A");
+    Utilities::Debug("Checkpoint A");
     if (i != 0) {  // initial switch to see what hands we have made
       checkCountHands(count, i, pair, twoPair, trips, straight_, flush, fullHouse, quads, straightFlush, quint, highCards, currJokerValue,
                       jokerHandStrength,
                       false);  // opportunity for optimization here, do not have to check every hand with every iteration of the loop
     }
 
-    Utilities::Log("Checkpoint B");
+    Utilities::Debug("Checkpoint B");
 
     if (count > 0) {
       straight.push_back(i + 1);
@@ -235,13 +256,13 @@ std::vector<int> Player::evaluateHand(std::shared_ptr<Hand> hand) {
     }
   }
 
-  Utilities::Log("finished for loop");
+  Utilities::Debug("finished for loop");
 
   NormieFlush(jokerEval, jokerHandStrength, jokerSuit, flush, flushIndex, currJokerValue, maxFlushSizeIndex, flushes);
 
   if (jokerEval) {
     countIndex = countMax == 0 ? 13 : countIndex;
-    checkCountHands(countMax, countIndex, pair, twoPair, trips, straight_, flush, fullHouse, quads, straightFlush, quint, highCards,
+    checkCountHands(countMax + 1, countIndex, pair, twoPair, trips, straight_, flush, fullHouse, quads, straightFlush, quint, highCards,
                     currJokerValue, jokerHandStrength, jokerEval);
   }
 
@@ -252,10 +273,12 @@ std::vector<int> Player::evaluateHand(std::shared_ptr<Hand> hand) {
   }
   if (jokerEval) {
     currJokerValue = currJokerValue == 14 ? 1 : currJokerValue;
+    Utilities::Debug("Joker Suit: " + std::to_string(jokerSuit));
+    Utilities::Debug("Joker Value: " + std::to_string(currJokerValue));
     this->addCard(jokerSuit * 13 + currJokerValue - 1);
   }
 
-  Utilities::Log("Hand Evaluation Finished");
+  Utilities::Debug("Hand Evaluation Finished");
   hand->jokerAvailable = false;
   hand->value = handValue;
   return handValue;
@@ -268,7 +291,7 @@ void Player::setState(int tricks_, std::vector<int> playOrder_) {
   this->resetPlayer();
 
   this->tricks = tricks_;
-  hand = std::make_shared<Hand>();
+  hand = std::make_unique<Hand>();
   this->hand.swap(hand);
 
   for (int i = 0; i < playOrder_.size(); i++) {
@@ -286,7 +309,7 @@ void Player::resetPlayer() {
   this->tricks = 0;
   this->playOrder.clear();
   this->hand.reset();
-  this->hand = std::make_shared<Hand>();
+  this->hand = std::make_unique<Hand>();
   this->cardsLeft.clear();
   for (int i = 0; i < 54; i++) {
     cardsLeft.insert(i);
@@ -381,7 +404,7 @@ void Player::addToHand(int pair, int twoPair, int trips, int straight_, int flus
       }
     }
   }
-  Utilities::Log("Finished Normal Hands");
+  Utilities::Debug("Finished Normal Hands");
   while (handValue.size() < 6) {
     handValue.push_back(0);
   }
@@ -443,7 +466,7 @@ void Player::flushEval(int& maxFlushSizeIndex, bool jokerEval, std::vector<std::
         }
       }
       flush = flushes[flushIndex][flushes[flushIndex].size() - 1];
-      Utilities::Log("Flush: " + std::to_string(flush));
+      Utilities::Debug("Flush: " + std::to_string(flush));
     }
   }
 }
@@ -471,11 +494,17 @@ void Player::NormieFlush(int jokerEval, int& jokerHandStrength, int& jokerSuit, 
 
 void Player::checkCountHands(int count, int countIndex, int& pair, int& twoPair, int& trips, int& straight_, int& flush, int& fullHouse,
                              int& quads, int& straightFlush, int& quint, std::priority_queue<int, std::vector<int>>& highCards,
-                             int currJokerValue, int jokerHandStrength, int jokerEval) {
+                             int& currJokerValue, int& jokerHandStrength, int jokerEval) {
+
+  Utilities::Debug("Checking Count Hands");
+  if (jokerEval) {
+    Utilities::Debug("Joker Eval");
+  }
+  Utilities::Debug("Count: " + std::to_string(count));
 
   int tempCurrJokerValue;
   int tempJokerHandStrength;
-  if (jokerEval) {
+  if (!jokerEval) {
     tempCurrJokerValue = currJokerValue;
     tempJokerHandStrength = jokerHandStrength;
     jokerHandStrength = -1;
@@ -546,7 +575,7 @@ void Player::checkCountHands(int count, int countIndex, int& pair, int& twoPair,
       break;
   }
 
-  if (jokerEval) {
+  if (!jokerEval) {
     currJokerValue = tempCurrJokerValue;
     jokerHandStrength = tempJokerHandStrength;
   }

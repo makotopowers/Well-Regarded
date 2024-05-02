@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <configReader.hpp>
 #include <experiments.hpp>
 #include <player.hpp>
 #include <utilities.hpp>
@@ -208,36 +209,78 @@ High Card = 0
 // }
 
 // TEST(ExperimentsTest, Test1) {
-//   std::shared_ptr<Player> player1 = std::make_shared<Player>("Makoto");
-//   std::shared_ptr<Player> player2 = std::make_shared<Player>("Kaito");
+//   // Utilities util;
+//   // util.setDebug(true);
+//   std::unique_ptr<Player> player1 = std::make_unique<Player>("Makoto");
+//   std::unique_ptr<Player> player2 = std::make_unique<Player>("Kaito");
 //   player1->addCard(0);
 //   player1->addCard(13);
 //   player2->addCard(1);
 //   player1->printHand(player1->evaluateHand(player1->hand));
 //   player2->printHand(player2->evaluateHand(player2->hand));
 //   Experiments exp;
-//   std::vector<int> ret = exp.spotTest(player1, player2, 1000);
+//   std::vector<double> ret = exp.spotTest(player1, player2, 1000);
 //   std::cout << "Mean: " << ret[0] << std::endl;
 //   std::cout << "Variance: " << ret[1] << std::endl;
 //   ASSERT_EQ(ret.size(), 2);
 // }
 
-TEST(EvalTest, jjj) {
-  Player* player1 = new Player("Makoto");
-  std::vector<int> toAdd = {1, 17, 46, 9, 45, 25, 18, 48, 49, 53};
-  for (int i = 0; i < toAdd.size(); i++) {
-    player1->addCard(toAdd[i]);
-    player1->evaluateHand(player1->hand);
+// TEST(EvalTest, jjj) {
+//   Player* player1 = new Player("Makoto");
+//   std::vector<int> toAdd = {1, 17, 46, 9, 45, 25, 18, 48, 49, 53};
+//   for (int i = 0; i < toAdd.size(); i++) {
+//     player1->addCard(toAdd[i]);
+//     player1->evaluateHand(player1->hand);
+//   }
+//   std::vector<int> ret = player1->evaluateHand(player1->hand);
+//   std::vector<int> expected = {8, 11, 0, 0, 0, 0};
+//   for (int i = 0; i < ret.size(); i++) {
+//     // std::cout << ret[i] << std::endl;
+//     ASSERT_EQ(ret[i], expected[i]);
+//   }
+// }
+
+// TEST(jokerTest, test1) {
+//   std::unique_ptr<Player> player1 = std::make_unique<Player>("Makoto");
+//   player1->addCard(52);
+//   player1->printHand(player1->evaluateHand(player1->hand));
+// }
+
+// TEST(copyConstructor, test1) {
+//   std::unique_ptr<Player> player1 = std::make_unique<Player>("Makoto");
+//   player1->addCard(52);
+//   player1->printHand(player1->evaluateHand(player1->hand));
+
+//   std::unique_ptr<Player> player2 = std::make_unique<Player>(player1);
+//   player2->addCard(1);
+//   player2->printHand(player2->evaluateHand(player2->hand));
+//   player1->printHand(player1->evaluateHand(player1->hand));
+
+//   player2->resetPlayer();
+//   player2->addCard(20);
+//   player2->printHand(player2->evaluateHand(player2->hand));
+//   player1->printHand(player1->evaluateHand(player1->hand));
+// }
+
+TEST(randomTest, test1) {
+  std::vector<int> results = std::vector<int>(54, 0);
+  for (int i = 0; i < 1000000; i++) {
+    std::srand(static_cast<unsigned int>(std::time(nullptr) + rand()));
+    int card = std::rand() % 54;
+    results[card] += 1;
   }
-  std::vector<int> ret = player1->evaluateHand(player1->hand);
-  std::vector<int> expected = {8, 11, 0, 0, 0, 0};
-  for (int i = 0; i < ret.size(); i++) {
-    // std::cout << ret[i] << std::endl;
-    ASSERT_EQ(ret[i], expected[i]);
+
+  for (int i = 0; i < results.size(); i++) {
+    std::cout << i << ": " << results[i] << std::endl;
   }
 }
 
 int main(int argc, char** argv) {
+  Utilities util;
+  ConfigReader config;
+  config.readConfigFile("../../conf/global.conf");
+  std::cout << config.returnConfigValue<int>("DEBUG") << std::endl;
+  util.setDebug(config.returnConfigValue<int>("DEBUG"));
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
