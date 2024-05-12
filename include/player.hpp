@@ -33,6 +33,8 @@ struct Hand {
     jokers = hand_->jokers;
     jokerAvailable = hand_->jokerAvailable;
   }
+
+  Hand operator=(const Hand& hand_) = delete;
 };
 
 class Player {
@@ -40,6 +42,7 @@ class Player {
   Player();
   Player(std::string name);
   Player(std::unique_ptr<Player>& player_);  // copy constructor
+  Player& operator=(const Player& player_) = delete;
   ~Player();
   std::string name;
 
@@ -53,7 +56,7 @@ class Player {
 
   void addCard(int card);
 
-  void setState(int tricks_, std::vector<int> playOrder_);
+  void setState(int tricks_, std::vector<int> playOrder_, int jokersPlayed_, int numCardsLeft_);
 
   void resetHand();
   void resetPlayer();

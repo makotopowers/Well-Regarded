@@ -42,7 +42,6 @@ Player::Player(std::unique_ptr<Player>& player_) {
   this->jokers = player_->jokers;
   this->cardsLeft = player_->cardsLeft;
   this->numCardsLeft = player_->numCardsLeft;
-
   this->playOrder = player_->playOrder;
 }
 
@@ -73,6 +72,7 @@ void Player::addCard(int card) {
     }
   }
   playOrder.push_back(card);
+  cardsLeft.erase(card);
 }
 
 int Player::turn(std::unique_ptr<Hand>& handV, int tricksV, int jokersV, int numCardsLeftV) {
@@ -128,7 +128,7 @@ int Player::playCard() {
   Utilities::Debug(this->name + ": " + std::to_string(cardsLeft.size()) + " Cards Left");
   this->addCard(cardsLeftVector[card]);
   this->printCard(cardsLeftVector[card]);
-  cardsLeft.erase(cardsLeftVector[card]);
+
   return 0;
 }
 
@@ -137,7 +137,7 @@ void Player::resetHand() {
 
   this->hand.reset();
   this->hand = std::make_unique<Hand>();
-  playOrder.push_back(-1);
+  playOrder = std::vector<int>();
 }
 
 void Player::printCard(int card) {
@@ -284,15 +284,31 @@ std::vector<int> Player::evaluateHand(std::unique_ptr<Hand>& hand) {
   return handValue;
 }
 
-void Player::setState(int tricks_, std::vector<int> playOrder_) {
+void Player::setState(int tricks_, std::vector<int> playOrder_, int jokersPlayed_, int numCardsLeft_) {
   /// @brief Set player's hand
   /// @param playOrder_ Play order up to some point in the game
 
   this->resetPlayer();
 
   this->tricks = tricks_;
-  hand = std::make_unique<Hand>();
-  this->hand.swap(hand);
+  std::unique_ptr<Hand> hand_ = std::make_unique<Hand>();
+  this->hand.swap(hand_);
+  this->jokers = jokersPlayed_;
+  this->hand->jokers = jokersPlayed_;
+
+  for (int i = 0; i < jokersPlayed_; i++) {
+    this->cardsLeft.erase(52 + i);
+    this->numCardsLeft--;
+  }
+
+  for (int i = 0; i < 53 - (numCardsLeft_ - jokersPlayed_); i++) {
+    std::srand(static_cast<unsigned int>(std::time(nullptr) + rand()));
+    int card = std::rand() % cardsLeft.size();
+    if (std::find(playOrder_.begin(), playOrder_.end(), card) != playOrder_.end()) {
+      this->cardsLeft.erase(card);
+      this->numCardsLeft--;
+    }
+  }
 
   for (int i = 0; i < playOrder_.size(); i++) {
     this->addCard(playOrder_[i]);
@@ -309,7 +325,8 @@ void Player::resetPlayer() {
   this->tricks = 0;
   this->playOrder.clear();
   this->hand.reset();
-  this->hand = std::make_unique<Hand>();
+  std::unique_ptr<Hand> hand_ = std::make_unique<Hand>();
+  this->hand.swap(hand_);
   this->cardsLeft.clear();
   for (int i = 0; i < 54; i++) {
     cardsLeft.insert(i);

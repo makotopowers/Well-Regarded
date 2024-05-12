@@ -65,7 +65,7 @@ void Experiments::spotTest(std::unique_ptr<Player>& player1, std::unique_ptr<Pla
     Utilities::Debug("iteration: " + std::to_string(_));
 
     Utilities::Debug("--------------------------------");
-    player2->setState(beforeTricks, beforePlayOrder);
+    player2->setState(beforeTricks, beforePlayOrder, 0, DECK_SIZE);
     player2->evaluateHand();
 
     ahead = Utilities::compareHand(player1->hand->value, player2->hand->value);
@@ -82,7 +82,6 @@ std::vector<double> Experiments::spotTestp(std::unique_ptr<Player>& player1, std
   /// @brief see how many cards it takes for hand1 to beat hand2
   /// @param hand1 std::shared_ptr<Hand> hand1
   /// @param hand2 std::shared_ptr<Hand> hand2
-  int ahead = TIE;
 
   // start timer
   std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
@@ -159,3 +158,11 @@ double Experiments::variance(std::vector<int> vec) {
   }
   return sum / vec.size();
 }
+
+// double Experiments::spotTest2(std::unique_ptr<Player>& player1, std::unique_ptr<Player>& player2, int iterations) {
+//   /// @brief see how many cards it takes for hand1 to beat hand2
+//   /// @param hand1 std::shared_ptr<Hand> hand1
+//   /// @param hand2 std::shared_ptr<Hand> hand2
+
+//   // start timer
+//   std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();

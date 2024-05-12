@@ -83,6 +83,10 @@ int main() {
     std::vector<int> player2PlayOrder;
     int player1Tricks = configReader.returnConfigValue<int>("PLAYER1_TRICKS");
     int player2Tricks = configReader.returnConfigValue<int>("PLAYER2_TRICKS");
+    int player1Jokers = configReader.returnConfigValue<int>("PLAYER1_JOKERS");
+    int player2Jokers = configReader.returnConfigValue<int>("PLAYER2_JOKERS");
+    int player1NumCardsLeft = configReader.returnConfigValue<int>("PLAYER1_NUM_CARDS_LEFT");
+    int player2NumCardsLeft = configReader.returnConfigValue<int>("PLAYER2_NUM_CARDS_LEFT");
 
     std::istringstream p1PlayOrderStr(configReader.returnConfigValue<std::string>("PLAYER1_PLAY_ORDER"));
     std::istringstream p2PlayOrderStr(configReader.returnConfigValue<std::string>("PLAYER2_PLAY_ORDER"));
@@ -96,8 +100,8 @@ int main() {
       player2PlayOrder.push_back(std::stoi(token));
     }
 
-    player1->setState(player1Tricks, player1PlayOrder);
-    player2->setState(player2Tricks, player2PlayOrder);
+    player1->setState(player1Tricks, player1PlayOrder, player1Jokers, player1NumCardsLeft);
+    player2->setState(player2Tricks, player2PlayOrder, player2Jokers, player2NumCardsLeft);
     player1->evaluateHand();
     player2->evaluateHand();
 
